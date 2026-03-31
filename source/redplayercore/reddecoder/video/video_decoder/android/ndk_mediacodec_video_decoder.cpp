@@ -195,6 +195,9 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::drain_decoder() {
 
       video_decoded_callback_->on_decoded_frame(std::move(buffer));
 
+    } else if (status == AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
+      // No output buffer available within the timeout; this is normal,
+      // especially before the first frame or when the decoder is busy.
     } else if (status == AMEDIACODEC_INFO_OUTPUT_BUFFERS_CHANGED) {
       AV_LOGW(DEC_TAG, "[reddecoder] mediacodec output buffer changed\n");
     } else if (status == AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED) {

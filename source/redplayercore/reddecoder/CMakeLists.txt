@@ -28,12 +28,15 @@ set(SRC_LIST
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(TARGET_PLATFORM android)
-  set(CMAKE_SYSTEM_VERSION 21)
+  # Note: CMAKE_SYSTEM_VERSION is controlled by minSdk in build.gradle
   set(EXTRA_FFMPEG_DIR
       "${EXTRA_DIR}/ffmpeg/${TARGET_PLATFORM}/${CMAKE_ANDROID_ARCH_ABI}"
   )
   set(CMAKE_ANDROID_NDK $ENV{ANDROID_NDK})
+  # mediacodec_loader.cpp uses dlopen at runtime, so no DT_NEEDED for
+  # libmediandk.so. Hardware decode works on API 21+, graceful fallback below.
   set(SRC_LIST ${SRC_LIST}
+               video/video_decoder/android/mediacodec_loader.cpp
                video/video_decoder/android/ndk_mediacodec_video_decoder.cpp
   )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
@@ -61,12 +64,14 @@ link_directories("${EXTRA_FFMPEG_DIR}")
 add_library(reddecoder SHARED ${SRC_LIST})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+  find_library(log-lib log)
   target_link_libraries(
     reddecoder
-    mediandk
     android
     redbase
     ffmpeg
+    ${log-lib}
+    # mediandk is NOT linked here; loaded at runtime via dlopen in mediacodec_loader.cpp
   )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
   target_link_libraries(

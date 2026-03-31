@@ -11,7 +11,8 @@ set(SRC_LIST src/RedDict.cc src/RedLog.cc)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(CMAKE_ANDROID_NDK $ENV{ANDROID_NDK})
-  set(CMAKE_SYSTEM_VERSION 21)
+  # Note: CMAKE_SYSTEM_VERSION is controlled by minSdk in build.gradle
+  # Removed hardcoded 21 to allow Android 4.1+ (API 16+) support
   set(SRC_LIST
       ${SRC_LIST}
       src/jni/ByteBuffer.cc

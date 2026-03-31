@@ -5,7 +5,6 @@
 
 #include <memory>
 
-#include "media/NdkMediaExtractor.h"
 #include "reddecoder/common/logger.h"
 #include "reddecoder/video/video_common/format_convert_helper.h"
 
@@ -24,7 +23,7 @@ static void mediacodec_buffer_release(MediaCodecBufferContext *context,
     if (context->decoder_serial ==
         (reinterpret_cast<Ndk_MediaCodecVideoDecoder *>(context->decoder))
             ->get_serial()) {
-      AMediaCodec_releaseOutputBuffer(
+      amedia::releaseOutputBuffer(
           reinterpret_cast<AMediaCodec *>(context->media_codec),
           context->buffer_index, render);
     } else {
@@ -77,7 +76,7 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::feed_decoder(const Buffer *buffer,
          !is_drain_state_) {
     ssize_t buf_idx = current_input_buffer_;
     if (buf_idx < 0) {
-      buf_idx = AMediaCodec_dequeueInputBuffer(media_codec_.get(),
+      buf_idx = amedia::dequeueInputBuffer(media_codec_.get(),
                                                AMC_INPUT_TIMEOUT_US);
       if (buf_idx < 0) {
         if (buf_idx == AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
@@ -93,7 +92,7 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::feed_decoder(const Buffer *buffer,
 
     size_t buf_size;
     uint8_t *buf =
-        AMediaCodec_getInputBuffer(media_codec_.get(), buf_idx, &buf_size);
+        amedia::getInputBuffer(media_codec_.get(), buf_idx, &buf_size);
     if (buf_size <= 0 || buf == NULL) {
       AV_LOGE(DEC_TAG, "[reddecoder] mediacodec get input buffer error: %d\n",
               static_cast<int>(buf_size));
@@ -137,7 +136,7 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::feed_decoder(const Buffer *buffer,
       pts = 0;
     }
 
-    auto status = AMediaCodec_queueInputBuffer(
+    auto status = amedia::queueInputBuffer(
         media_codec_.get(), buf_idx, 0, copy_size, pts,
         is_drain_state_ ? AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM : 0);
     if (status != AMEDIA_OK) {
@@ -156,7 +155,7 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::drain_decoder() {
     if (!output_first_frame_state_) {
       drain_timeout_us = 0;
     }
-    auto status = AMediaCodec_dequeueOutputBuffer(media_codec_.get(), &info,
+    auto status = amedia::dequeueOutputBuffer(media_codec_.get(), &info,
                                                   drain_timeout_us);
     if (status >= 0) {
       std::unique_ptr<Buffer> buffer =
@@ -199,10 +198,10 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::drain_decoder() {
     } else if (status == AMEDIACODEC_INFO_OUTPUT_BUFFERS_CHANGED) {
       AV_LOGW(DEC_TAG, "[reddecoder] mediacodec output buffer changed\n");
     } else if (status == AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED) {
-      auto format = AMediaCodec_getOutputFormat(media_codec_.get());
+      auto format = amedia::getOutputFormat(media_codec_.get());
       AV_LOGI(DEC_TAG, "[reddecoder] mediacodec output format changed to %s\n",
-              AMediaFormat_toString(format));
-      AMediaFormat_delete(format);
+              amedia::format_toString(format));
+      amedia::format_delete(format);
     } else {
       AV_LOGE(DEC_TAG, "[reddecoder] mediacodec unexpected info code: %zd\n",
               status);
@@ -278,6 +277,11 @@ Ndk_MediaCodecVideoDecoder::init_media_format_desc(const Buffer *buffer) {
     return VideoCodecError::kInvalidParameter;
   }
 
+  // Defensive check: amedia function pointers must be loaded before use.
+  if (!amedia::is_available()) {
+    return VideoCodecError::kInitError;
+  }
+
   VideoFormatDescMeta *meta = buffer->get_video_format_desc_meta();
   if (!meta || meta->height <= 0 || meta->width <= 0) {
     return VideoCodecError::kInvalidParameter;
@@ -293,7 +297,7 @@ Ndk_MediaCodecVideoDecoder::init_media_format_desc(const Buffer *buffer) {
   codec_ctx_.is_annexb_extradata = false;
 
   release_media_format_desc();
-  media_format_.reset(AMediaFormat_new());
+  media_format_.reset(amedia::format_new());
 
   size_t sps_pps_size = 0;
   size_t convert_size = extradata_size + 20;
@@ -319,7 +323,7 @@ Ndk_MediaCodecVideoDecoder::init_media_format_desc(const Buffer *buffer) {
       }
     }
     codec_ctx_.nal_size = nal_size;
-    AMediaFormat_setBuffer(media_format_.get(), "csd-0", convert_buffer,
+    amedia::format_setBuffer(media_format_.get(), "csd-0", convert_buffer,
                            sps_pps_size);
     AV_LOGI(DEC_TAG,
             "[reddecoder_%p] reset video format, extra data size %zu\n", this,
@@ -329,10 +333,10 @@ Ndk_MediaCodecVideoDecoder::init_media_format_desc(const Buffer *buffer) {
   }
 
   if (codec_info_.codec_name == VideoCodecName::kH264) {
-    AMediaFormat_setString(media_format_.get(), AMEDIAFORMAT_KEY_MIME,
+    amedia::format_setString(media_format_.get(), AMEDIAFORMAT_KEY_MIME,
                            "video/avc");
   } else if (codec_info_.codec_name == VideoCodecName::kH265) {
-    AMediaFormat_setString(media_format_.get(), AMEDIAFORMAT_KEY_MIME,
+    amedia::format_setString(media_format_.get(), AMEDIAFORMAT_KEY_MIME,
                            "video/hevc");
   }
 
@@ -341,15 +345,15 @@ Ndk_MediaCodecVideoDecoder::init_media_format_desc(const Buffer *buffer) {
   codec_ctx_.rotate_degree = meta->rotate_degree;
 
   if (codec_ctx_.rotate_degree != 0) {
-    AMediaFormat_setInt32(media_format_.get(), "rotation-degrees",
+    amedia::format_setInt32(media_format_.get(), "rotation-degrees",
                           codec_ctx_.rotate_degree);
   }
 
-  AMediaFormat_setInt32(media_format_.get(), AMEDIAFORMAT_KEY_WIDTH,
+  amedia::format_setInt32(media_format_.get(), AMEDIAFORMAT_KEY_WIDTH,
                         codec_ctx_.width);
-  AMediaFormat_setInt32(media_format_.get(), AMEDIAFORMAT_KEY_HEIGHT,
+  amedia::format_setInt32(media_format_.get(), AMEDIAFORMAT_KEY_HEIGHT,
                         codec_ctx_.height);
-  AMediaFormat_setInt32(media_format_.get(), AMEDIAFORMAT_KEY_MAX_INPUT_SIZE,
+  amedia::format_setInt32(media_format_.get(), AMEDIAFORMAT_KEY_MAX_INPUT_SIZE,
                         0);
   free(convert_buffer);
   return VideoCodecError::kNoError;
@@ -361,6 +365,12 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::release_media_format_desc() {
 }
 
 VideoCodecError Ndk_MediaCodecVideoDecoder::init_media_codec() {
+  // Ensure libmediandk.so is available (API 21+). On older devices this
+  // returns false and hardware decode gracefully falls back to software.
+  if (!amedia::load()) {
+    AV_LOGE(DEC_TAG, "[reddecoder] libmediandk.so unavailable (API < 21)\n");
+    return VideoCodecError::kInitError;
+  }
   release_media_codec();
 
   if (!media_format_) {
@@ -369,9 +379,9 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::init_media_codec() {
   current_input_buffer_ = -1;
 
   if (codec_info_.codec_name == VideoCodecName::kH264) {
-    media_codec_.reset(AMediaCodec_createDecoderByType("video/avc"));
+    media_codec_.reset(amedia::createDecoderByType("video/avc"));
   } else if (codec_info_.codec_name == VideoCodecName::kH265) {
-    media_codec_.reset(AMediaCodec_createDecoderByType("video/hevc"));
+    media_codec_.reset(amedia::createDecoderByType("video/hevc"));
   }
 
   if (!media_codec_) {
@@ -382,14 +392,14 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::init_media_codec() {
             media_codec_.get());
   }
 
-  media_status_t status = AMediaCodec_configure(
+  media_status_t status = amedia::configure(
       media_codec_.get(), media_format_.get(), native_window_, nullptr, 0);
 
   if (status != AMEDIA_OK) {
     return VideoCodecError::kInitError;
   }
 
-  status = AMediaCodec_start(media_codec_.get());
+  status = amedia::start(media_codec_.get());
 
   if (status != AMEDIA_OK) {
     return VideoCodecError::kInitError;
@@ -403,7 +413,7 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::init_media_codec() {
 VideoCodecError Ndk_MediaCodecVideoDecoder::release_media_codec() {
   serial_++;
   if (media_codec_ && is_mediacodec_start_) {
-    media_status_t ret = AMediaCodec_stop(media_codec_.get());
+    media_status_t ret = amedia::stop(media_codec_.get());
     if (ret < 0) {
       AV_LOGE(DEC_TAG, "[reddecoder] media codec stop error %d\n",
               static_cast<int>(ret));
@@ -419,6 +429,14 @@ Ndk_MediaCodecVideoDecoder::set_video_format_description(const Buffer *buffer) {
   if (buffer->get_type() != BufferType::kVideoFormatDesc ||
       !buffer->get_video_format_desc_meta()) {
     return VideoCodecError::kInvalidParameter;
+  }
+
+  // Guard: libmediandk.so is only available on API 21+. If it cannot be
+  // loaded (e.g. Android 4.x) return an error so the caller falls back to
+  // software decode instead of crashing on a null function pointer.
+  if (!amedia::load()) {
+    AV_LOGE(DEC_TAG, "[reddecoder] libmediandk.so unavailable, skip hardware decode\n");
+    return VideoCodecError::kInitError;
   }
 
   AndroidHardWareContext *ctx = reinterpret_cast<AndroidHardWareContext *>(
@@ -450,7 +468,7 @@ VideoCodecError Ndk_MediaCodecVideoDecoder::flush() {
   is_eof_state_ = false;
   output_first_frame_state_ = false;
   if (media_codec_) {
-    auto status = AMediaCodec_flush(media_codec_.get());
+    auto status = amedia::flush(media_codec_.get());
     if (status < 0) {
       AV_LOGE(DEC_TAG, "[reddecoder] mediacodec flush error: %d\n", status);
       return VideoCodecError::kInternalError;

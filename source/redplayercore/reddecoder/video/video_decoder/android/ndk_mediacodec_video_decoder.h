@@ -1,7 +1,6 @@
 #pragma once
 
-#include "media/NdkMediaCodec.h"
-#include "media/NdkMediaFormat.h"
+#include "mediacodec_loader.h"
 #include "reddecoder/video/video_codec_info.h"
 #include "reddecoder/video/video_common_definition.h"
 #include "reddecoder/video/video_decoder/video_decoder.h"
@@ -9,11 +8,15 @@
 namespace reddecoder {
 
 struct AMediaFormatReleaser {
-  void operator()(AMediaFormat *ptr) const { AMediaFormat_delete(ptr); }
+  void operator()(AMediaFormat *ptr) const {
+    if (amedia::format_delete) amedia::format_delete(ptr);
+  }
 };
 
 struct AMediaCodecReleaser {
-  void operator()(AMediaCodec *ptr) const { AMediaCodec_delete(ptr); }
+  void operator()(AMediaCodec *ptr) const {
+    if (amedia::codec_delete) amedia::codec_delete(ptr);
+  }
 };
 
 class Ndk_MediaCodecVideoDecoder : public VideoDecoder {

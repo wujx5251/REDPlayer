@@ -17,7 +17,8 @@ set(REDPLAYERCORE_DIR "${ROOT_DIR}/../")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(TARGET_PLATFORM android)
-  set(CMAKE_SYSTEM_VERSION 21)
+  # Note: CMAKE_SYSTEM_VERSION is controlled by minSdk in build.gradle
+  # Removed hardcoded 21 to allow Android 4.1+ (API 16+) support
   set(CMAKE_ANDROID_NDK $ENV{ANDROID_NDK})
   set(EXTRA_FFMPEG_DIR
       "${EXTRA_DIR}/ffmpeg/${TARGET_PLATFORM}/${CMAKE_ANDROID_ARCH_ABI}"
@@ -112,8 +113,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     reddecoder
     redstrategycenter
     ffmpeg
-    mediandk
     android
+    # mediandk is loaded at runtime by reddecoder/mediacodec_loader.cpp via dlopen
   )
   set(LIBRARY_OUTPUT_DIRECTORY
       "${ROOT_DIR}/../../android/OpenRedPlayerCore/libs/${CMAKE_ANDROID_ARCH_ABI}"

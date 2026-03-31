@@ -478,7 +478,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
   g_jvm = vm;
   if (!vm ||
-      vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
+      vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_4) != JNI_OK) {
     return JNI_ERR;
   }
 
@@ -491,12 +491,12 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
   env->RegisterNatives(g_reddownload_class, g_methods,
                        sizeof(g_methods) / sizeof((g_methods)[0]));
 
-  return JNI_VERSION_1_6;
+  return JNI_VERSION_1_4;
 }
 
 JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *jvm, void *reserved) {
   JNIEnv *env = nullptr;
-  if (jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
+  if (jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_4) != JNI_OK) {
     return;
   }
 

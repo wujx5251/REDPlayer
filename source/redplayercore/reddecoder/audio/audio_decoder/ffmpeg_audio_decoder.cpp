@@ -57,6 +57,14 @@ AudioCodecError FFmpegAudioDecoder::init(AudioCodecConfig &config) {
   }
 
   AVCodec *codec = avcodec_find_decoder(codec_context_->codec_id);
+  if (!codec && codec_context_->codec_id == AV_CODEC_ID_MP2) {
+    // MP2 decoder may not be compiled in; fall back to MP3 decoder which uses
+    // the same MPEG Audio framework and can handle layer-2 bitstreams.
+    codec = avcodec_find_decoder(AV_CODEC_ID_MP3);
+    if (codec) {
+      codec_context_->codec_id = AV_CODEC_ID_MP3;
+    }
+  }
   if (!codec) {
     release();
     return AudioCodecError::kInitError;

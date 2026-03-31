@@ -83,20 +83,20 @@ Register the \fIares_library_android_init\fP.
     JNIEnv *env = NULL;
     jclass  cls = NULL;
     jint    res;
-  
-    if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_6) != JNI_OK)
+
+    if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_4) != JNI_OK)
       return -1;
-  
+
     cls = (*env)->FindClass(env, JNIT_CLASS);
     if (cls == NULL)
       return -1;
-  
+
     res = (*env)->RegisterNatives(env, cls, funcs, sizeof(funcs)/sizeof(funcs[0]));
     if (res != 0)
       return -1;
-  
+
     ares_library_init_jvm(vm);
-    return JNI_VERSION_1_6;
+    return JNI_VERSION_1_4;
   }
 .fi
 Calling the registered function from Java:
@@ -105,10 +105,10 @@ Calling the registered function from Java:
     static {
       System.loadLibrary("cares");
     }
-  
+
     private static native boolean initialize_native(ConnectivityManager
       connectivity_manager);
-  
+
     public static boolean initialize(Context context) {
       initialize_native((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE));
     }

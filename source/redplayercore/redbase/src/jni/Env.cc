@@ -11,7 +11,7 @@ jni::JniEnvPtr::JniEnvPtr() {
     return;
   }
 
-  if (kJvm->GetEnv(reinterpret_cast<void **>(&env_), JNI_VERSION_1_6) !=
+  if (kJvm->GetEnv(reinterpret_cast<void **>(&env_), JNI_VERSION_1_4) !=
       JNI_EDETACHED) {
     return;
   }

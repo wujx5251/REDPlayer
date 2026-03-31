@@ -994,7 +994,7 @@ static JNINativeMethod g_methods[] = {
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *jvm, void *reserved) {
   JNIEnv *env;
-  if (JNI_OK != jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6)) {
+  if (JNI_OK != jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_4)) {
     return JNI_ERR;
   }
 
@@ -1011,12 +1011,12 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *jvm, void *reserved) {
   globalInit();
   globalSetInjectCallback(inject_callback);
 
-  return JNI_VERSION_1_6;
+  return JNI_VERSION_1_4;
 }
 
 extern "C" JNIEXPORT void JNI_OnUnload(JavaVM *jvm, void *reserved) {
   JNIEnv *env;
-  if (JNI_OK != jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6)) {
+  if (JNI_OK != jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_4)) {
     return;
   }
 

@@ -671,7 +671,7 @@ void JniDeleteGlobalRefP(JNIEnv *env, jobject *obj) {
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *jvm, void *reserved) {
   int ret = 0;
   JNIEnv *env = nullptr;
-  if (JNI_OK != jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6)) {
+  if (JNI_OK != jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_4)) {
     return JNI_ERR;
   }
 
@@ -681,7 +681,7 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *jvm, void *reserved) {
   ret = LoadAllClass(env);
   JNI_CHECK_RET(ret == 0, env, nullptr, nullptr, -1);
 
-  return JNI_VERSION_1_6;
+  return JNI_VERSION_1_4;
 }
 
 #endif // __ANDROID__
